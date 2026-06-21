@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apolux — Painel de Disparos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="orbit-logo">
+        <svg viewBox="0 0 100 100">
+          <g class="spin1">
+            <ellipse class="ring" cx="50" cy="50" rx="46" ry="20"/>
+            <circle class="dot-blue" cx="96" cy="50" r="3.5"/>
+          </g>
+          <g class="spin2">
+            <ellipse class="ring-bright" cx="50" cy="50" rx="32" ry="44"/>
+            <circle class="dot-gold" cx="50" cy="6" r="3"/>
+          </g>
+          <circle class="core" cx="50" cy="50" r="13"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="name">Apolux</div>
+        <div class="tagline">TECHNOLOGY &amp; AI</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <div class="nav-item active" data-page="dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-item" data-page="contatos"><i class="ti ti-users"></i>Contatos</div>
+      <div class="nav-item" data-page="templates"><i class="ti ti-mail"></i>Templates</div>
+      <div class="nav-item" data-page="disparar"><i class="ti ti-rocket"></i>Disparar</div>
+      <div class="nav-item" data-page="whatsapp"><i class="ti ti-brand-whatsapp"></i>WhatsApp</div>
+      <div class="nav-item" data-page="agendar"><i class="ti ti-clock"></i>Agendar</div>
+      <div class="nav-item" data-page="followup"><i class="ti ti-refresh"></i>Follow-up</div>
+      <div class="nav-item" data-page="blacklist"><i class="ti ti-ban"></i>Blacklist</div>
+      <div class="nav-item" data-page="campanhas"><i class="ti ti-folder"></i>Campanhas</div>
+      <div class="nav-item" data-page="historico"><i class="ti ti-list-details"></i>Histórico</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-pill">
+        <div class="status-dot {{ 'ok' if gmail_ok else 'off' }}"></div>
+        <span>{{ gmail_user if gmail_ok else 'Gmail não configurado' }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Visão geral dos seus disparos e campanhas</p>
+      </div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-folder"></i>Campanhas recentes</div>
+        <div class="table-wrap">
+          <table id="tbl-dash-campanhas">
+            <thead><tr><th>Campanha</th><th>Template</th><th>Data</th><th>Enviados</th><th>Taxa</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTATOS -->
+    <section class="page" id="page-contatos">
+      <div class="page-header">
+        <h1>Contatos</h1>
+        <p>Cadastre manualmente ou importe via Excel/CSV</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-user-plus"></i>Adicionar contato</div>
+        <div class="field-row">
+          <div class="field"><label>Nome</label><input id="c-nome" placeholder="João Silva"/></div>
+          <div class="field"><label>E-mail</label><input id="c-email" placeholder="joao@empresa.com"/></div>
+          <div class="field"><label>Empresa</label><input id="c-empresa" placeholder="Clínica Bella Vita"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Tipo</label>
+            <select id="c-tipo"><option value="clinica">Clínica</option><option value="escritorio">Escritório</option></select>
+          </div>
+          <div class="field"><label>WhatsApp (opcional)</label><input id="c-whatsapp" placeholder="11999999999"/></div>
+        </div>
+        <button class="btn btn-gold" onclick="addContato()"><i class="ti ti-plus"></i>Adicionar contato</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-file-import"></i>Importar planilha</div>
+        <p class="text-muted mb-12">Colunas aceitas: nome, email, empresa, tipo, whatsapp (opcional)</p>
+        <div class="gap-8">
+          <label class="btn btn-sm" style="cursor:pointer">
+            <i class="ti ti-upload"></i>Importar CSV ou Excel
+            <input type="file" id="file-importar" accept=".csv,.xlsx,.xls" style="display:none" onchange="importarArquivo()"/>
+          </label>
+          <a class="btn btn-sm" href="/api/contatos/modelo"><i class="ti ti-download"></i>Baixar modelo CSV</a>
+        </div>
+        <p class="hint" id="import-status"></p>
+      </div>
+
+      <div class="panel">
+        <div class="flex-between mb-12">
+          <div class="panel-title" style="margin:0"><i class="ti ti-address-book"></i>Contatos cadastrados (<span id="total-contatos">0</span>)</div>
+          <button class="btn btn-sm btn-danger" onclick="limparContatos()"><i class="ti ti-trash"></i>Limpar todos</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Tipo</th><th>WhatsApp</th><th></th></tr></thead>
+            <tbody id="tbl-contatos"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEMPLATES -->
+    <section class="page" id="page-templates">
+      <div class="page-header">
+        <h1>Templates</h1>
+        <p>Crie quantos templates quiser, edite e duplique livremente</p>
+      </div>
+      <div class="split">
+        <div class="split-side">
+          <button class="btn btn-gold mb-12" style="width:100%" onclick="novoTemplate()"><i class="ti ti-plus"></i>Novo template</button>
+          <div class="tmpl-list" id="tmpl-list"></div>
+        </div>
+        <div class="split-main">
+          <div class="panel">
+            <div class="field"><label>Nome do template</label><input id="t-nome"/></div>
+            <div class="field-row">
+              <div class="field">
+                <label>Tipo</label>
+                <select id="t-tipo"><option value="clinica">Clínica</option><option value="escritorio">Escritório</option></select>
+              </div>
+            </div>
+            <div class="field"><label>Assunto</label><input id="t-assunto"/></div>
+            <div class="field">
+              <label>Corpo do e-mail (use [Nome] e [Empresa] como variáveis)</label>
+              <textarea id="t-corpo" rows="16"></textarea>
+            </div>
+            <div class="gap-8">
+              <button class="btn btn-gold" onclick="salvarTemplate()"><i class="ti ti-device-floppy"></i>Salvar</button>
+              <button class="btn btn-sm" onclick="duplicarTemplate()"><i class="ti ti-copy"></i>Duplicar</button>
+              <button class="btn btn-sm btn-danger" onclick="deletarTemplate()"><i class="ti ti-trash"></i>Deletar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DISPARAR -->
+    <section class="page" id="page-disparar">
+      <div class="page-header">
+        <h1>Disparar</h1>
+        <p>Escolha o template, os destinatários e dispare com segurança</p>
+      </div>
+
+      <div class="panel">
+        <div class="field-row">
+          <div class="field">
+            <label>Template</label>
+            <select id="d-template"></select>
+          </div>
+          <div class="field">
+            <label>Nome da campanha</label>
+            <input id="d-campanha"/>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field" style="max-width:140px">
+            <label>Delay mínimo (s)</label>
+            <input id="d-delay-min" type="number" value="5" min="0"/>
+          </div>
+          <div class="field" style="max-width:140px">
+            <label>Delay máximo (s)</label>
+            <input id="d-delay-max" type="number" value="10" min="0"/>
+          </div>
+          <div class="field" style="align-self:flex-end; flex:0">
+            <p class="hint" style="margin-top:9px">Intervalo aleatório entre cada envio (anti-spam)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="flex-between mb-12">
+          <div class="panel-title" style="margin:0"><i class="ti ti-users"></i>Destinatários</div>
+          <div class="gap-8">
+            <button class="btn btn-sm" onclick="marcarContatos('todos')">Todos</button>
+            <button class="btn btn-sm" onclick="marcarContatos('nenhum')">Nenhum</button>
+            <button class="btn btn-sm" onclick="marcarContatos('clinica')">Clínicas</button>
+            <button class="btn btn-sm" onclick="marcarContatos('escritorio')">Escritórios</button>
+          </div>
+        </div>
+        <div class="check-list" id="check-contatos"></div>
+      </div>
+
+      <div class="panel">
+        <div class="progress-track"><div class="progress-fill" id="disparo-progress"></div></div>
+        <p class="progress-label" id="disparo-progress-label">Pronto para disparar</p>
+        <div class="log-console mt-12" id="disparo-log"><div class="log-empty">O log aparecerá aqui durante o disparo...</div></div>
+        <div class="gap-8 mt-12">
+          <button class="btn btn-gold" id="btn-disparar" onclick="disparar()"><i class="ti ti-rocket"></i>Disparar e-mails</button>
+          <button class="btn btn-danger" id="btn-cancelar" onclick="cancelarDisparo()" disabled><i class="ti ti-player-stop"></i>Cancelar</button>
+          <a class="btn btn-sm" href="/api/historico/exportar"><i class="ti ti-file-spreadsheet"></i>Exportar relatório Excel</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHATSAPP -->
+    <section class="page" id="page-whatsapp">
+      <div class="page-header">
+        <h1>WhatsApp</h1>
+        <p>Envie mensagens via WhatsApp Web com um clique</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-message"></i>Mensagem</div>
+        <div class="field">
+          <label>Texto (use [Nome] e [Empresa])</label>
+          <textarea id="w-msg" rows="6">Olá, [Nome]! 👋
+
+Passei para complementar o e-mail sobre automação para a [Empresa].
+
+Seria rápido — 15 minutos essa semana para mostrar como funciona?
+
+Att, Apolux Technology & AI</textarea>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-user"></i>Enviar para contato específico</div>
+        <div class="field-row">
+          <div class="field"><label>Telefone</label><input id="w-tel" placeholder="11999999999"/></div>
+          <div class="field"><label>Nome</label><input id="w-nome"/></div>
+          <div class="field"><label>Empresa</label><input id="w-empresa"/></div>
+        </div>
+        <button class="btn btn-gold" onclick="abrirWhatsapp()"><i class="ti ti-brand-whatsapp"></i>Abrir WhatsApp</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-list-details"></i>Histórico de envios</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Nome</th><th>Telefone</th><th>Empresa</th><th>Status</th></tr></thead>
+            <tbody id="tbl-whatsapp"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENDAR -->
+    <section class="page" id="page-agendar">
+      <div class="page-header">
+        <h1>Agendar</h1>
+        <p>Programe disparos automáticos para data e hora futuras</p>
+      </div>
+
+      <div class="panel">
+        <div class="field"><label>Nome do agendamento</label><input id="ag-nome"/></div>
+        <div class="field-row">
+          <div class="field"><label>Template</label><select id="ag-template"></select></div>
+          <div class="field"><label>Destinatários</label>
+            <select id="ag-dest"><option>Todos</option><option>Só clínicas</option><option>Só escritórios</option></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field" style="max-width:160px"><label>Data (DD/MM/AAAA)</label><input id="ag-data"/></div>
+          <div class="field" style="max-width:120px"><label>Hora (HH:MM)</label><input id="ag-hora" value="09:00"/></div>
+        </div>
+        <button class="btn btn-gold" onclick="agendar()"><i class="ti ti-clock-plus"></i>Agendar disparo</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-calendar-time"></i>Agendamentos</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Template</th><th>Data/Hora</th><th>Destinatários</th><th>Status</th><th></th></tr></thead>
+            <tbody id="tbl-agendados"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOLLOW-UP -->
+    <section class="page" id="page-followup">
+      <div class="page-header">
+        <h1>Follow-up</h1>
+        <p>Reengaje contatos que não responderam ao primeiro e-mail</p>
+      </div>
+
+      <div class="panel">
+        <div class="field" style="max-width:200px"><label>Enviar após (dias sem resposta)</label><input id="fu-dias" type="number" value="3"/></div>
+        <div class="field"><label>Assunto</label><input id="fu-assunto" value="[Nome], vi que ainda não nos falamos..."/></div>
+        <div class="field">
+          <label>Corpo</label>
+          <textarea id="fu-corpo" rows="8">Olá, [Nome],
+
+Passei para verificar se recebeu meu e-mail sobre a [Empresa].
+
+Seria ótimo conversar 15 minutos essa semana.
+
+Att,
+Apolux Technology & AI
+📲 (11) 99325-3806</textarea>
+        </div>
+        <button class="btn btn-gold" onclick="dispararFollowup()"><i class="ti ti-send"></i>Disparar follow-ups pendentes</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-clock-hour-4"></i>Pendentes</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Data envio</th><th>Status</th></tr></thead>
+            <tbody id="tbl-followup"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLACKLIST -->
+    <section class="page" id="page-blacklist">
+      <div class="page-header">
+        <h1>Blacklist</h1>
+        <p>E-mails nesta lista nunca receberão mensagens</p>
+      </div>
+
+      <div class="panel">
+        <div class="field-row">
+          <div class="field"><label>E-mail</label><input id="bl-email" placeholder="email@bloqueado.com"/></div>
+        </div>
+        <button class="btn btn-gold" onclick="addBlacklist()"><i class="ti ti-ban"></i>Adicionar à blacklist</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><i class="ti ti-shield-x"></i>Bloqueados</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>E-mail</th><th></th></tr></thead>
+            <tbody id="tbl-blacklist"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAMPANHAS -->
+    <section class="page" id="page-campanhas">
+      <div class="page-header">
+        <h1>Campanhas</h1>
+        <p>Histórico de todos os disparos realizados</p>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Campanha</th><th>Template</th><th>Data</th><th>Total</th><th>Enviados</th><th>Bloqueados</th><th>Erros</th><th>Taxa</th></tr></thead>
+            <tbody id="tbl-campanhas"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section class="page" id="page-historico">
+      <div class="page-header flex-between">
+        <div>
+          <h1>Histórico</h1>
+          <p>Todos os e-mails enviados, com rastreamento de abertura</p>
+        </div>
+        <div class="gap-8">
+          <a class="btn btn-sm" href="/api/historico/exportar"><i class="ti ti-file-spreadsheet"></i>Exportar Excel</a>
+          <button class="btn btn-sm btn-danger" onclick="limparHistorico()"><i class="ti ti-trash"></i>Limpar</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Campanha</th><th>Status</th><th>Aberto em</th></tr></thead>
+            <tbody id="tbl-historico"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
